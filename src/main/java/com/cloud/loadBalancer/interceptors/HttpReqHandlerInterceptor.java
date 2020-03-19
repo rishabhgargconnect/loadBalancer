@@ -15,11 +15,15 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class HttpReqHandlerInterceptor implements HandlerInterceptor {
     private static List<String> servers;
-    private AtomicInteger curServerIndex = new AtomicInteger(0);
+    private AtomicInteger curServerIndex = new AtomicInteger(1);
+    private Map<String, ConcurrentHashMap<String, Long>> vm_api_to_time_map = new ConcurrentHashMap<>();
+    private Map<String, String> vm_to_cpu_map = new ConcurrentHashMap<>();
+    private Map<String, String> vm_to_ram_map = new ConcurrentHashMap<>();
 
 
     public HttpReqHandlerInterceptor() {
@@ -31,9 +35,13 @@ public class HttpReqHandlerInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        String serverPath = servers.get(curServerIndex.getAndIncrement() % servers.size());
+        String serverPath = servers.get(curServerIndex.getAndUpdate(prev -> {
+            if (prev == servers.size() - 1) {
+                return 0;
+            }
+            return prev + 1;
+        }) % servers.size());
         System.out.println("server path = " + serverPath);
-
         System.out.println("req URL = ");
         StringBuffer requestURL = request.getRequestURL();
         System.out.println("req URL = " + requestURL);

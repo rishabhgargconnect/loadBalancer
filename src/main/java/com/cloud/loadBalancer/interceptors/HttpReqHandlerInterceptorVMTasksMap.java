@@ -19,19 +19,16 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class HttpReqHandlerInterceptorCpy implements HandlerInterceptor {
+public class HttpReqHandlerInterceptorVMTasksMap implements HandlerInterceptor {
     private static List<String> servers;
-    private AtomicInteger curServerIndex = new AtomicInteger(1);
     private VMTasksMap vmTasksMap1;
     private VMTasksMap vmTasksMap2;
     private List<VMTasksMap> vmTasksMaps;
     private Map<String, ConcurrentHashMap<String, Long>> vm_api_to_time_map = new ConcurrentHashMap<>();
-    private Map<String, String> vm_to_cpu_map = new ConcurrentHashMap<>();
-    private Map<String, String> vm_to_ram_map = new ConcurrentHashMap<>();
     private final Random random = new Random();
 
 
-    public HttpReqHandlerInterceptorCpy() {
+    public HttpReqHandlerInterceptorVMTasksMap() {
         List<String> serverNames = new ArrayList<>();
         serverNames.add("http://localhost:9090");
         serverNames.add("http://localhost:9091");

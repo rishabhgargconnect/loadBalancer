@@ -1,6 +1,8 @@
 package com.cloud.loadBalancer.interceptors;
 
+import com.cloud.loadBalancer.beans.HttpRequestAllParamaters;
 import com.cloud.loadBalancer.beans.VMTasksMap;
+import com.cloud.loadBalancer.exceptionHandler.ExceptionQueue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
 import org.springframework.http.HttpEntity;
@@ -44,51 +46,71 @@ public class HttpReqHandlerInterceptorVMTasksMap implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        int minTasksLeftVmIndex = getVmIndexWithMinimumTasks();
-        System.out.println("minTasksLeftVmIndex = " + minTasksLeftVmIndex);
-        //TODO Can insert a random task below, if just looking at length and nnot taking anything weighted(else take weighted)
-        int randKey = random.nextInt();
-        VMTasksMap selectedVmTasksMap = vmTasksMaps.get(minTasksLeftVmIndex);
-        while (selectedVmTasksMap.containsKey(randKey)) {
-            randKey = random.nextInt();
-        }
-        selectedVmTasksMap.addTask(randKey, new Object());
-        String serverPath = servers.get(minTasksLeftVmIndex);
+        if (request.getRequestURI().contains("/exceptionQueueLength") || request.getRequestURI().contains("/handleException")) {
+            return true;
+        } else {
+            int minTasksLeftVmIndex = getVmIndexWithMinimumTasks();
+            System.out.println("minTasksLeftVmIndex = " + minTasksLeftVmIndex);
+            //TODO Can insert a random task below, if just looking at length and nnot taking anything weighted(else take weighted)
+            int randKey = random.nextInt();
+            VMTasksMap selectedVmTasksMap = vmTasksMaps.get(minTasksLeftVmIndex);
+            while (selectedVmTasksMap.containsKey(randKey)) {
+                randKey = random.nextInt();
+            }
+            selectedVmTasksMap.addTask(randKey, new Object());
+            String serverPath = servers.get(minTasksLeftVmIndex);
 
-        System.out.println("server path = " + serverPath);
-        System.out.println("req URL = ");
-        StringBuffer requestURL = request.getRequestURL();
-        System.out.println("req URL = " + requestURL);
-        String requestURI = request.getRequestURI();
-        System.out.println("req URI = " + requestURI);
-        Enumeration<String> parameterNames = request.getParameterNames();
-        Map<String, String> params = new HashMap<>();
-        while (parameterNames.hasMoreElements()) {
-            String paramKey = parameterNames.nextElement();
-            String paramVal = request.getParameter(paramKey);
-            params.put(paramKey, paramVal);
-        }
-
-        String body = IOUtils.toString(request.getReader());
-
-        RestTemplate restTemplate = new RestTemplate();
-        String httpMethod = request.getMethod();
-        if (httpMethod.equals(HttpMethod.GET.name())) {
-            HttpEntity<String> entity = new HttpEntity<>(getHttpHeaders(request));
-            ResponseEntity<Object> responseEntity = restTemplate.exchange(createUri(params, serverPath + requestURI), HttpMethod.GET, entity, Object.class);
-            convertResponseEntityToHttpServletResponse(responseEntity, response);
-        } else if (httpMethod.equals(HttpMethod.POST.name())) {
-            HttpEntity<String> entity = new HttpEntity<>(body, getHttpHeaders(request));
-            try {
-                ResponseEntity<Object> responseEntity = restTemplate.exchange(createUri(params, serverPath + requestURI), HttpMethod.POST, entity, Object.class);
-                convertResponseEntityToHttpServletResponse(responseEntity, response);
-            } catch (Exception e) {
-                System.out.println("error is : " + e.getMessage());
+            System.out.println("server path = " + serverPath);
+            System.out.println("req URL = ");
+            StringBuffer requestURL = request.getRequestURL();
+            System.out.println("req URL = " + requestURL);
+            String requestURI = request.getRequestURI();
+            System.out.println("req URI = " + requestURI);
+            Enumeration<String> parameterNames = request.getParameterNames();
+            Map<String, String> params = new HashMap<>();
+            while (parameterNames.hasMoreElements()) {
+                String paramKey = parameterNames.nextElement();
+                String paramVal = request.getParameter(paramKey);
+                params.put(paramKey, paramVal);
             }
 
+            String body = IOUtils.toString(request.getReader());
+
+            RestTemplate restTemplate = new RestTemplate();
+            String httpMethod = request.getMethod();
+            if (httpMethod.equals(HttpMethod.GET.name())) {
+                System.out.println("######################REQUEST URI IS"+requestURI);
+                HttpEntity<String> entity = new HttpEntity<>(getHttpHeaders(request));
+                try {
+                    ResponseEntity<Object> responseEntity = restTemplate.exchange(createUri(params, serverPath, requestURI), HttpMethod.GET, entity, Object.class);
+                    convertResponseEntityToHttpServletResponse(responseEntity, response);
+                } catch (OutOfMemoryError e) {
+                    System.out.println("!!!!!!!!!!!!!!!!!!!!OOM ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+
+                } catch (Exception e) {
+                    System.out.println("error is : " + e.getMessage());
+                    ExceptionQueue.addToExceptionHandleQueue(new HttpRequestAllParamaters(params, serverPath, requestURI, HttpMethod.GET, entity));
+                    System.out.println("Added to exception queue whos length is" + ExceptionQueue.exceptionQueueLength());
+
+
+                }
+            } else if (httpMethod.equals(HttpMethod.POST.name())) {
+                HttpEntity<String> entity = new HttpEntity<>(body, getHttpHeaders(request));
+                URI uri = null;
+                try {
+                    uri = createUri(params, serverPath, requestURI);
+                    ResponseEntity<Object> responseEntity = restTemplate.exchange(uri, HttpMethod.POST, entity, Object.class);
+                    convertResponseEntityToHttpServletResponse(responseEntity, response);
+                } catch (Exception e) {
+                    System.out.println("error is : " + e.getMessage());
+                    ExceptionQueue.addToExceptionHandleQueue(new HttpRequestAllParamaters(params, serverPath, requestURI, HttpMethod.POST, entity));
+                    System.out.println("Added to exception queue whos length is" + ExceptionQueue.exceptionQueueLength());
+                }
+
+            }
+            selectedVmTasksMap.removeTaskWithKey(randKey);
+            return false;
         }
-        selectedVmTasksMap.removeTaskWithKey(randKey);
-        return false;
     }
 
     private int getVmIndexWithMinimumTasks() {
@@ -104,8 +126,8 @@ public class HttpReqHandlerInterceptorVMTasksMap implements HandlerInterceptor {
         return minTasksLeftVmIndex;
     }
 
-    private URI createUri(Map<String, String> params, String requestPath) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(requestPath);
+    private URI createUri(Map<String, String> params, String serverPath, String requestUri) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(serverPath + requestUri);
 
         if (params != null) {
             params.forEach(builder::queryParam);

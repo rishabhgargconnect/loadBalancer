@@ -27,7 +27,6 @@ public class HttpReqHandlerInterceptorVmApiExecutionTime implements HandlerInter
     private VMTasksMap vmTasksMap1;
     private VMTasksMap vmTasksMap2;
     private List<VMTasksMap> vmTasksMaps;
-    private Map<String, ConcurrentHashMap<String, Long>> vm_api_to_time_map = new ConcurrentHashMap<>();
     private Map<String, String> vm_to_cpu_map = new ConcurrentHashMap<>();
     private Map<String, String> vm_to_ram_map = new ConcurrentHashMap<>();
     private ApiToVmExecTime apiToVmExecTime;

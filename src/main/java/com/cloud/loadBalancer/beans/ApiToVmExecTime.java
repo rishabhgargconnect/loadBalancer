@@ -31,11 +31,10 @@ public class ApiToVmExecTime {
         if (vmExecTimeToTaskEncounteredCounts == null) {
             vmExecTimeToTaskEncounteredCounts = new ArrayList<>();
             for (int i = 0; i < VMInfo.VM_COUNT; i++) {
-                vmExecTimeToTaskEncounteredCounts.add(new VmExecTimeToTaskEncounteredCount(0, Long.MAX_VALUE, 0));
+                vmExecTimeToTaskEncounteredCounts.add(new VmExecTimeToTaskEncounteredCount(i, Long.MAX_VALUE, 0));
             }
         }
 
         return vmExecTimeToTaskEncounteredCounts;
     }
-
 }

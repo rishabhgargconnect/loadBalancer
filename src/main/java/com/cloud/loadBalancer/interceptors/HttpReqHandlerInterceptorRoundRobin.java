@@ -1,5 +1,7 @@
 package com.cloud.loadBalancer.interceptors;
 
+import com.cloud.loadBalancer.beans.HttpRequestAllParamaters;
+import com.cloud.loadBalancer.exceptionHandler.ExceptionQueue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
 import org.springframework.http.HttpEntity;
@@ -61,8 +63,14 @@ public class HttpReqHandlerInterceptorRoundRobin implements HandlerInterceptor {
         String httpMethod = request.getMethod();
         if (httpMethod.equals(HttpMethod.GET.name())) {
             HttpEntity<String> entity = new HttpEntity<>(getHttpHeaders(request));
-            ResponseEntity<Object> responseEntity = restTemplate.exchange(createUri(params, serverPath + requestURI), HttpMethod.GET, entity, Object.class);
-            convertResponseEntityToHttpServletResponse(responseEntity, response);
+            try {
+                ResponseEntity<Object> responseEntity = restTemplate.exchange(createUri(params, serverPath + requestURI), HttpMethod.GET, entity, Object.class);
+                convertResponseEntityToHttpServletResponse(responseEntity, response);
+            } catch (Exception e) {
+                System.out.println("error is : " + e.getMessage());
+                ExceptionQueue.addToExceptionHandleQueue(new HttpRequestAllParamaters(params, serverPath, requestURI, HttpMethod.GET, entity));
+
+            }
         } else if (httpMethod.equals(HttpMethod.POST.name())) {
             HttpEntity<String> entity = new HttpEntity<>(body, getHttpHeaders(request));
             try {
@@ -73,6 +81,7 @@ public class HttpReqHandlerInterceptorRoundRobin implements HandlerInterceptor {
 
             } catch (Exception e) {
                 System.out.println("error is : " + e.getMessage());
+                ExceptionQueue.addToExceptionHandleQueue(new HttpRequestAllParamaters(params, serverPath, requestURI, HttpMethod.GET, entity));
             }
 
         }

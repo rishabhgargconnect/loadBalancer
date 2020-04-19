@@ -1,8 +1,10 @@
 package com.cloud.loadBalancer.interceptors;
 
 import com.cloud.loadBalancer.beans.ApiToVmExecTime;
+import com.cloud.loadBalancer.beans.HttpRequestAllParamaters;
 import com.cloud.loadBalancer.beans.VMTasksMap;
 import com.cloud.loadBalancer.beans.VmExecTimeToTaskEncounteredCount;
+import com.cloud.loadBalancer.exceptionHandler.ExceptionQueue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
 import org.springframework.http.HttpEntity;
@@ -82,6 +84,7 @@ public class HttpReqHandlerInterceptorVmApiExecutionTime implements HandlerInter
                 convertResponseEntityToHttpServletResponse(responseEntity, response);
             } catch (Exception e) {
                 System.out.println("error is : " + e.getMessage());
+                ExceptionQueue.addToExceptionHandleQueue(new HttpRequestAllParamaters(params, serverPath, requestURI, HttpMethod.GET, entity));
             }
         } else if (httpMethod.equals(HttpMethod.POST.name())) {
             HttpEntity<String> entity = new HttpEntity<>(body, getHttpHeaders(request));
@@ -94,6 +97,7 @@ public class HttpReqHandlerInterceptorVmApiExecutionTime implements HandlerInter
                 convertResponseEntityToHttpServletResponse(responseEntity, response);
             } catch (Exception e) {
                 System.out.println("error is : " + e.getMessage());
+                ExceptionQueue.addToExceptionHandleQueue(new HttpRequestAllParamaters(params, serverPath, requestURI, HttpMethod.GET, entity));
             }
 
         }

@@ -79,14 +79,11 @@ public class HttpReqHandlerInterceptorVMTasksMap implements HandlerInterceptor {
             RestTemplate restTemplate = new RestTemplate();
             String httpMethod = request.getMethod();
             if (httpMethod.equals(HttpMethod.GET.name())) {
-                System.out.println("######################REQUEST URI IS"+requestURI);
+                System.out.println("######################REQUEST URI IS" + requestURI);
                 HttpEntity<String> entity = new HttpEntity<>(getHttpHeaders(request));
                 try {
                     ResponseEntity<Object> responseEntity = restTemplate.exchange(createUri(params, serverPath, requestURI), HttpMethod.GET, entity, Object.class);
                     convertResponseEntityToHttpServletResponse(responseEntity, response);
-                } catch (OutOfMemoryError e) {
-                    System.out.println("!!!!!!!!!!!!!!!!!!!!OOM ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-
                 } catch (Exception e) {
                     System.out.println("error is : " + e.getMessage());
                     ExceptionQueue.addToExceptionHandleQueue(new HttpRequestAllParamaters(params, serverPath, requestURI, HttpMethod.GET, entity));

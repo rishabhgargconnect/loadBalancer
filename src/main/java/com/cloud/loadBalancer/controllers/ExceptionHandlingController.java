@@ -2,19 +2,12 @@ package com.cloud.loadBalancer.controllers;
 
 import com.cloud.loadBalancer.beans.HttpRequestAllParamaters;
 import com.cloud.loadBalancer.exceptionHandler.ExceptionQueue;
-import com.cloud.loadBalancer.responseDto.StudentInfoDto;
-import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.model.Statistics;
-import com.github.dockerjava.core.DockerClientBuilder;
-import com.github.dockerjava.netty.InvocationBuilder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
 
@@ -39,7 +32,6 @@ public class ExceptionHandlingController {
     @GetMapping("/exceptionQueueLength")
     public int getExceptionQueueLength() {
         return ExceptionQueue.exceptionQueueLength();
-
     }
 
 
@@ -52,6 +44,4 @@ public class ExceptionHandlingController {
         URI uri = builder.build().encode().toUri();
         return uri;
     }
-
-
 }

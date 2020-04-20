@@ -7,6 +7,7 @@ from multiprocessing.dummy import Pool
 
 url = 'http://localhost:9090/api/student/detail?name=Rishabh'
 headers = {
+
     'Content-Type': 'text/plain',
 }
 
@@ -35,11 +36,11 @@ start_time = time.time()
 
 
 #Using futures
-pool = Pool(1000)
+pool = Pool(500)
 for i in range(10):
     futures = []
 
-    for x in range(1000):
+    for x in range(500):
         futures.append(pool.apply_async(requests.get, [url]))
 
     for future in futures:

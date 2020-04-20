@@ -35,16 +35,18 @@ start_time = time.time()
 
 
 #Using futures
-pool = Pool(1000)
+pool = Pool(500)
 for i in range(10):
     futures = []
 
-    for x in range(1000):
+    for x in range(500):
         futures.append(pool.apply_async(requests.get, [url]))
 
     for future in futures:
         response = future.get()
         if(response.status_code!=200):
             print("500")
+#         else:
+#             print("no issue")
 
     print("time taken = ",time.time() - start_time)

@@ -1,6 +1,6 @@
 package com.cloud.loadBalancer.beans;
 
-public class VmExecTimeToTaskEncounteredCount {
+public class VmExecTimeToTaskEncounteredCount{
     public VmExecTimeToTaskEncounteredCount(int vmId, Long executionTime, int taskEncounteredCount) {
         this.vmId = vmId;
         this.executionTime = executionTime;
@@ -38,5 +38,5 @@ public class VmExecTimeToTaskEncounteredCount {
         this.taskEncounteredCount = taskEncounteredCount;
     }
 
-
 }
+

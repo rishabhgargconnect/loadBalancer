@@ -1,5 +1,6 @@
 package com.cloud.loadBalancer.configuration;
 
+import com.cloud.loadBalancer.interceptors.HttpReqHandlerInterceptorOverload;
 import com.cloud.loadBalancer.interceptors.HttpReqHandlerInterceptorRoundRobin;
 import com.cloud.loadBalancer.interceptors.HttpReqHandlerInterceptorVMTasksMap;
 import org.springframework.context.annotation.Bean;
@@ -11,10 +12,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     @Bean
-    public HttpReqHandlerInterceptorRoundRobin httpReqHandlerInterceptor() {
-        return new HttpReqHandlerInterceptorRoundRobin();
+    public HttpReqHandlerInterceptorOverload httpReqHandlerInterceptor() {
+        return new HttpReqHandlerInterceptorOverload();
     }
-
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

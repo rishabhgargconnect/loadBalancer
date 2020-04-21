@@ -1,10 +1,8 @@
 package com.cloud.loadBalancer.interceptors;
 
 import com.cloud.loadBalancer.beans.ApiToVmExecTime;
-import com.cloud.loadBalancer.beans.HttpRequestAllParamaters;
-import com.cloud.loadBalancer.beans.VMTasksMap;
+import com.cloud.loadBalancer.beans.ControllerStats;
 import com.cloud.loadBalancer.beans.VmExecTimeToTaskEncounteredCount;
-import com.cloud.loadBalancer.exceptionHandler.ExceptionQueue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
 import org.springframework.http.HttpEntity;
@@ -20,44 +18,30 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
-public class HttpReqHandlerInterceptorVmApiExecutionTime implements HandlerInterceptor {
+public class HttpReqHandlerInterceptorOverload implements HandlerInterceptor {
     private static List<String> servers;
-    private AtomicInteger curServerIndex = new AtomicInteger(1);
-    private VMTasksMap vmTasksMap1;
-    private VMTasksMap vmTasksMap2;
-    private List<VMTasksMap> vmTasksMaps;
-    private Map<String, String> vm_to_cpu_map = new ConcurrentHashMap<>();
-    private Map<String, String> vm_to_ram_map = new ConcurrentHashMap<>();
+    public static  ControllerStats controllerStats;
     private ApiToVmExecTime apiToVmExecTime;
 
-
-    public HttpReqHandlerInterceptorVmApiExecutionTime() {
+    public HttpReqHandlerInterceptorOverload() {
         List<String> serverNames = new ArrayList<>();
         serverNames.add("http://localhost:9090");
         serverNames.add("http://localhost:9091");
         servers = Collections.unmodifiableList(serverNames);
-
-        vmTasksMap1 = new VMTasksMap();
-        vmTasksMap2 = new VMTasksMap();
-        List<VMTasksMap> vmTasksMapTempList = new ArrayList<>();
-        vmTasksMapTempList.add(vmTasksMap1);
-        vmTasksMapTempList.add(vmTasksMap2);
-        vmTasksMaps = Collections.unmodifiableList(vmTasksMapTempList);
+        controllerStats = new ControllerStats();
         apiToVmExecTime = new ApiToVmExecTime();
     }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        int vmIdWithMinimumExecutionTime = getVmIdWithMinimumExecutionTime(request.getRequestURI());
+        int vmIdWithMinimumExecutionTime = getNonOverloadedVmIdWithMinimumExecutionTime(request.getRequestURI());
         //TODO Add logic to check if above vmId has less load on it to do the task
         String serverPath = servers.get(vmIdWithMinimumExecutionTime);
         long executionTimeTakenForCurrentTask = 0L;
 
 
-        System.out.println("server path = " + serverPath);
+        System.out.println("Overload server path = " + serverPath);
         System.out.println("req URL = ");
         StringBuffer requestURL = request.getRequestURL();
         System.out.println("req URL = " + requestURL);
@@ -84,7 +68,6 @@ public class HttpReqHandlerInterceptorVmApiExecutionTime implements HandlerInter
                 convertResponseEntityToHttpServletResponse(responseEntity, response);
             } catch (Exception e) {
                 System.out.println("error is : " + e.getMessage());
-                ExceptionQueue.addToExceptionHandleQueue(new HttpRequestAllParamaters(params, serverPath, requestURI, HttpMethod.GET, entity));
             }
         } else if (httpMethod.equals(HttpMethod.POST.name())) {
             HttpEntity<String> entity = new HttpEntity<>(body, getHttpHeaders(request));
@@ -97,7 +80,6 @@ public class HttpReqHandlerInterceptorVmApiExecutionTime implements HandlerInter
                 convertResponseEntityToHttpServletResponse(responseEntity, response);
             } catch (Exception e) {
                 System.out.println("error is : " + e.getMessage());
-                ExceptionQueue.addToExceptionHandleQueue(new HttpRequestAllParamaters(params, serverPath, requestURI, HttpMethod.GET, entity));
             }
 
         }
@@ -105,23 +87,27 @@ public class HttpReqHandlerInterceptorVmApiExecutionTime implements HandlerInter
         return false;
     }
 
-    private int getVmIdWithMinimumExecutionTime(String api) {
+    private int getNonOverloadedVmIdWithMinimumExecutionTime(String api) {
         List<VmExecTimeToTaskEncounteredCount> vmExecutionTimesForApi = apiToVmExecTime.getVmExecutionTimesForApi(api);
         Comparator<VmExecTimeToTaskEncounteredCount> compareById = (VmExecTimeToTaskEncounteredCount o1, VmExecTimeToTaskEncounteredCount o2) -> o1.getExecutionTime().compareTo( o2.getExecutionTime() );
         Collections.sort(vmExecutionTimesForApi, compareById);
-        int vmIdWithMinimumExecutionTime = vmExecutionTimesForApi.get(0).getVmId();
+        //int vmIdWithMinimumExecutionTime = vmExecutionTimesForApi.get(0).getVmId();
+        for(int i =0; i< vmExecutionTimesForApi.size();i++){
+
+            if(controllerStats.getControllerStats(vmExecutionTimesForApi.get(i).getVmId()).getCpu_utilisation() < 5.00 && controllerStats.getControllerStats(vmExecutionTimesForApi.get(i).getVmId()).getMem_utilisation() < 50.00 ){
+                return vmExecutionTimesForApi.get(i).getVmId();
+            }
+        }
         /*long minExecTime = Long.MAX_VALUE;
         int vmIdWithMinimumExecutionTime = -1;
-        System.out.println("print the execution time");
         for (int i = 0; i < vmExecutionTimesForApi.size(); i++) {
-            System.out.println("Vm id "+i);
-            System.out.println(vmExecutionTimesForApi.get(i).getExecutionTime());
             if (vmExecutionTimesForApi.get(i).getExecutionTime() <= minExecTime) {
                 minExecTime = vmExecutionTimesForApi.get(i).getExecutionTime();
                 vmIdWithMinimumExecutionTime = i;
             }
         }*/
-        return vmIdWithMinimumExecutionTime;
+        // case when all the containers are overloaded. As of now added that
+        return 0;
     }
 
     private URI createUri(Map<String, String> params, String requestPath) {

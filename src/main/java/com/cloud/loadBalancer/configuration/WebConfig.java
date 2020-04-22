@@ -3,6 +3,7 @@ package com.cloud.loadBalancer.configuration;
 import com.cloud.loadBalancer.interceptors.HttpReqHandlerInterceptorOverload;
 import com.cloud.loadBalancer.interceptors.HttpReqHandlerInterceptorRoundRobin;
 import com.cloud.loadBalancer.interceptors.HttpReqHandlerInterceptorVMTasksMap;
+import com.cloud.loadBalancer.interceptors.HttpReqHandlerInterceptorVmApiExecutionTime;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;

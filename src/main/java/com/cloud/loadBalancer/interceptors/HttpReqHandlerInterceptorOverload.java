@@ -16,8 +16,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class HttpReqHandlerInterceptorOverload implements HandlerInterceptor {
     private static List<String> servers;
@@ -89,25 +91,37 @@ public class HttpReqHandlerInterceptorOverload implements HandlerInterceptor {
 
     private int getNonOverloadedVmIdWithMinimumExecutionTime(String api) {
         List<VmExecTimeToTaskEncounteredCount> vmExecutionTimesForApi = apiToVmExecTime.getVmExecutionTimesForApi(api);
-        Comparator<VmExecTimeToTaskEncounteredCount> compareById = (VmExecTimeToTaskEncounteredCount o1, VmExecTimeToTaskEncounteredCount o2) -> o1.getExecutionTime().compareTo( o2.getExecutionTime() );
-        Collections.sort(vmExecutionTimesForApi, compareById);
+        //Comparator<VmExecTimeToTaskEncounteredCount> compareById = (VmExecTimeToTaskEncounteredCount o1, VmExecTimeToTaskEncounteredCount o2) -> o1.getExecutionTime().compareTo( o2.getExecutionTime() );
+        //Collections.sort(vmExecutionTimesForApi, compareById);
         //int vmIdWithMinimumExecutionTime = vmExecutionTimesForApi.get(0).getVmId();
-        for(int i =0; i< vmExecutionTimesForApi.size();i++){
+        /*for(int i =0; i< vmExecutionTimesForApi.size();i++){
 
-            if(controllerStats.getControllerStats(vmExecutionTimesForApi.get(i).getVmId()).getCpu_utilisation() < 5.00 && controllerStats.getControllerStats(vmExecutionTimesForApi.get(i).getVmId()).getMem_utilisation() < 50.00 ){
+            if(controllerStats.getControllerStats(vmExecutionTimesForApi.get(i).getVmId()).getCpu_utilisation() < 5.00 && controllerStats.getControllerStats(vmExecutionTimesForApi.get(i).getVmId()).getMem_utilisation() < 65.00 ){
                 return vmExecutionTimesForApi.get(i).getVmId();
             }
-        }
-        /*long minExecTime = Long.MAX_VALUE;
-        int vmIdWithMinimumExecutionTime = -1;
-        for (int i = 0; i < vmExecutionTimesForApi.size(); i++) {
-            if (vmExecutionTimesForApi.get(i).getExecutionTime() <= minExecTime) {
-                minExecTime = vmExecutionTimesForApi.get(i).getExecutionTime();
-                vmIdWithMinimumExecutionTime = i;
-            }
         }*/
-        // case when all the containers are overloaded. As of now added that
-        return 0;
+        long minExecTime_withOverload = Long.MAX_VALUE;
+        int vmIdWithMinimumExecutionTimeWithOverload = -1;
+        long minExecTime = Long.MAX_VALUE;
+        int vmIdWithMinimumExecutionTime= -1;
+        for (int i = 0; i < vmExecutionTimesForApi.size(); i++) {
+            if (vmExecutionTimesForApi.get(i).getExecutionTime() <= minExecTime_withOverload &&( controllerStats.getControllerStats(i).getCpu_utilisation() < 5.00 && controllerStats.getControllerStats(i).getMem_utilisation() <65.00)) {
+                minExecTime_withOverload = vmExecutionTimesForApi.get(i).getExecutionTime();
+                vmIdWithMinimumExecutionTimeWithOverload = i;
+            }
+            if(vmExecutionTimesForApi.get(i).getExecutionTime() <= minExecTime){
+                minExecTime = vmExecutionTimesForApi.get(i).getExecutionTime();
+                vmIdWithMinimumExecutionTime =i;
+            }
+        }
+
+        // case when all the containers are overloaded. return the one with minimum api time.
+        if(vmIdWithMinimumExecutionTimeWithOverload == -1){
+            return vmIdWithMinimumExecutionTime;
+        }
+        else{
+            return vmIdWithMinimumExecutionTimeWithOverload;
+        }
     }
 
     private URI createUri(Map<String, String> params, String requestPath) {

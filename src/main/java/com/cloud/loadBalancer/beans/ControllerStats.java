@@ -4,9 +4,11 @@ import com.cloud.loadBalancer.constants.VMInfo;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ControllerStats {
-    private HashMap<Integer, VmCpuMemPerc> controller_stats_map = new HashMap<>();
+    private Map<Integer, VmCpuMemPerc> controller_stats_map = new ConcurrentHashMap<>();
 
     public ControllerStats() {
         for (int i = 0; i < VMInfo.VM_COUNT; i++) {

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class HttpReqHandlerInterceptorVmApiExecutionTime implements HandlerInterceptor {
@@ -107,20 +108,21 @@ public class HttpReqHandlerInterceptorVmApiExecutionTime implements HandlerInter
 
     private int getVmIdWithMinimumExecutionTime(String api) {
         List<VmExecTimeToTaskEncounteredCount> vmExecutionTimesForApi = apiToVmExecTime.getVmExecutionTimesForApi(api);
-        Comparator<VmExecTimeToTaskEncounteredCount> compareById = (VmExecTimeToTaskEncounteredCount o1, VmExecTimeToTaskEncounteredCount o2) -> o1.getExecutionTime().compareTo( o2.getExecutionTime() );
-        Collections.sort(vmExecutionTimesForApi, compareById);
-        int vmIdWithMinimumExecutionTime = vmExecutionTimesForApi.get(0).getVmId();
-        /*long minExecTime = Long.MAX_VALUE;
+        //Comparator<VmExecTimeToTaskEncounteredCount> compareById = (VmExecTimeToTaskEncounteredCount o1, VmExecTimeToTaskEncounteredCount o2) -> o1.getExecutionTime().compareTo( o2.getExecutionTime() );
+        //vmExecutionTimesForApi.sort(compareById);
+        //Collections.sort(vmExecutionTimesForApi, compareById);
+        //int vmIdWithMinimumExecutionTime = vmExecutionTimesForApi.get(0).getVmId();
+        long minExecTime = Long.MAX_VALUE;
         int vmIdWithMinimumExecutionTime = -1;
-        System.out.println("print the execution time");
+        //System.out.println("print the execution time");
         for (int i = 0; i < vmExecutionTimesForApi.size(); i++) {
-            System.out.println("Vm id "+i);
-            System.out.println(vmExecutionTimesForApi.get(i).getExecutionTime());
+            //System.out.println("Vm id "+i);
+            //System.out.println(vmExecutionTimesForApi.get(i).getExecutionTime());
             if (vmExecutionTimesForApi.get(i).getExecutionTime() <= minExecTime) {
                 minExecTime = vmExecutionTimesForApi.get(i).getExecutionTime();
                 vmIdWithMinimumExecutionTime = i;
             }
-        }*/
+        }
         return vmIdWithMinimumExecutionTime;
     }
 
